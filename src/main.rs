@@ -19,7 +19,7 @@ fn custom_theme_from_cursive(siv: &Cursive) -> Theme {
 fn main() {
     let mut siv = Cursive::new();
     let theme = custom_theme_from_cursive(&siv);
-    siv.set_window_title("BetterVim");
+    siv.set_window_title("Vimted");
     siv.set_theme(theme);
 
     let editor_content = TextArea::new()
