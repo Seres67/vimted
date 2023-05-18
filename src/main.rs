@@ -16,24 +16,15 @@ fn custom_theme_from_cursive(siv: &Cursive) -> Theme {
     theme
 }
 
-fn main() {
-    let mut siv = Cursive::new();
-    let theme = custom_theme_from_cursive(&siv);
-    siv.set_window_title("Vimted");
-    siv.set_theme(theme);
-
-    let editor_content = TextArea::new()
-        .with_name("editor_content")
-        .scrollable()
-        .wrap_with(OnEventView::new);
-
-    siv.add_fullscreen_layer(editor_content);
-
+fn setup_open_callback(siv: &mut Cursive)
+{
     siv.add_global_callback(CtrlChar('o'), |s| {
         let dialog = Dialog::new()
             .title("Open a file")
             .content(
-                EditView::new().with_name("file_name").fixed_width(30),
+                EditView::new()
+                    .with_name("file_name")
+                    .fixed_width(30),
             )
             .button("Cancel", |s| {
                 s.pop_layer();
@@ -42,8 +33,7 @@ fn main() {
                 let file_name = s
                     .call_on_name("file_name", |view: &mut EditView| {
                         view.get_content()
-                    })
-                    .unwrap();
+                    }).unwrap();
                 let file_path = PathBuf::from(file_name.trim());
                 let mut file = match File::open(file_path) {
                     Ok(file) => file,
@@ -78,12 +68,17 @@ fn main() {
             });
         s.add_layer(dialog);
     });
+}
 
+fn setup_save_callback(siv: &mut Cursive)
+{
     siv.add_global_callback(CtrlChar('s'), |s| {
         let dialog = Dialog::new()
             .title("Save a file")
             .content(
-                EditView::new().with_name("file_name").fixed_width(30),
+                EditView::new()
+                    .with_name("file_name")
+                    .fixed_width(30),
             )
             .button("Cancel", |s| {
                 s.pop_layer();
@@ -95,22 +90,42 @@ fn main() {
                     })
                     .unwrap();
                 let file_path = PathBuf::from(file_name.trim());
-                let file = File::create(file_path).map_err(|e| {
-                    println!("Failed to create file: {e}");
-                    let _ = Dialog::info("Failed to create file")
-                        .title("Error")
-                        .button("Ok", |s| {
-                            s.pop_layer();
-                        });
-                });
+                let file = File::create(file_path)
+                    .map_err(|e| {
+                        println!("Failed to create file: {e}");
+                        let _ = Dialog::info("Failed to create file")
+                            .title("Error")
+                            .button("Ok", |s| {
+                                s.pop_layer();
+                            });
+                    });
                 let contents = s.call_on_name("editor_content", |view: &mut TextArea| {
                     view.get_content().to_owned()
                 }).unwrap();
-                file.unwrap().write_all(contents.as_bytes())
+                file.unwrap()
+                    .write_all(contents.as_bytes())
                     .expect("Failed to write file");
                 s.pop_layer();
             });
         s.add_layer(dialog);
     });
+}
+
+fn main() {
+    let mut siv = Cursive::new();
+    let theme = custom_theme_from_cursive(&siv);
+    siv.set_window_title("Vimted");
+    siv.set_theme(theme);
+
+    let editor_content = TextArea::new()
+        .with_name("editor_content")
+        .scrollable()
+        .wrap_with(OnEventView::new);
+
+    siv.add_fullscreen_layer(editor_content);
+
+    setup_open_callback(&mut siv);
+    setup_save_callback(&mut siv);
+
     siv.run();
 }
